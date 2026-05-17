@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Souffle de l'Insecte</title>
+    
+    <link rel="icon" type="image/png" href="https://imgur.com/vaorPVs.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Noto+Sans+JP:wght@300;700&family=Shojumaru&family=Cormorant+Garamond:ital,wght=1,500;1,700;1,900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --kido-purple: #a17ee5;
+            --kido-purple-dark: #563d9c;
+            --kido-purple-medium: #8d79ca;
+            --kido-light: #f1c8fc;
+            --kido-glow: rgba(161, 126, 229, 0.75);
+            --bg-ultra-dark: #0d081b; 
+            --text-main: #f5f5f5;
+            --transition-main: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        html { 
+            scroll-behavior: smooth; 
+            scrollbar-gutter: stable;
+        }
+
+        /* Scrollbar globale */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080412;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #231640;
+            border-radius: 10px;
+            border: 2px solid #080412;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--kido-purple);
+            box-shadow: 0 0 10px var(--kido-purple);
+        }
+
+        * { cursor: default; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-ultra-dark);
+            color: var(--text-main);
+            font-family: 'Noto Sans JP', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+
+        body.modal-open {
+            overflow: hidden !important;
+        }
+
+        .background-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            filter: blur(8px); 
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(131, 91, 236, 0.35) 0%, transparent 80%),
+                url('https://www.transparenttextures.com/patterns/asfalt-dark.png');
+            opacity: 0.9;
+            transform: scale(1.05);
+            will-change: transform;
+        }
+
+        .vignette {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 20%, rgba(6, 3, 14, 0.92) 100%);
+            z-index: 0; pointer-events: none;
+        }
+
+        #butterfly-canvas { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 4; 
+            pointer-events: none; 
+            opacity: 0.85; 
+            will-change: transform;
+        }
+
+        header {
+            position: fixed; width: 100%; padding: 30px 80px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 1000; transition: padding 0.5s ease, background 0.5s ease, border 0.5s ease;
+            will-change: padding, background;
+        }
+        header.scrolled { 
+            background: rgba(13, 8, 27, 0.95); 
+            backdrop-filter: blur(20px); 
+            padding: 15px 80px; 
+            border-bottom: 1px solid rgba(161, 126, 229, 0.3); 
+        }
+
+        .logo-top { height: 75px; width: 75px; object-fit: contain; filter: drop-shadow(0 0 15px var(--kido-glow)); transition: transform 0.5s ease; border-radius: 50%; }
+        nav ul { display: flex; list-style: none; gap: 50px; margin: 0; padding: 0; }
+        nav ul li a { text-decoration: none; color: #fff; font-family: 'Cinzel'; font-size: 0.75rem; letter-spacing: 5px; opacity: 0.6; transition: opacity 0.4s ease, color 0.4s ease; }
+        nav ul li a:hover { opacity: 1; color: var(--kido-purple); text-shadow: 0 0 15px var(--kido-purple); }
+
+        .hero { position: relative; z-index: 3; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .mist-title { 
+            font-family: 'Shojumaru', cursive; font-size: clamp(2.5rem, 6vw, 4.5rem); 
+            color: #fff; text-shadow: 0 0 50px rgba(161, 126, 229, 0.6); 
+            margin: 0; line-height: 1.2; text-align: center; 
+            animation: pulseText 8s infinite ease-in-out; 
+            will-change: transform, opacity;
+        }
+        @keyframes pulseText { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.02); opacity: 0.88; } }
+
+        .main-section { position: relative; z-index: 3; padding: 0 5% 120px; display: flex; justify-content: center; }
+        .lore-grid { max-width: 1400px; width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; }
+
+        .clickable-card {
+            background: rgba(27, 16, 46, 0.5);
+            border: 1px solid rgba(161, 126, 229, 0.2);
+            padding: 50px 20px; border-radius: 4px;
+            transition: var(--transition-main), border-color 0.4s ease, background-color 0.4s ease;
+            text-align: center; backdrop-filter: blur(8px);
+            display: flex; flex-direction: column; align-items: center;
+            text-decoration: none; color: inherit;
+            will-change: transform, box-shadow;
+            transform: translateY(0);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .clickable-card:hover {
+            background: rgba(49, 29, 82, 0.65);
+            transform: translateY(-10px);
+            border-color: var(--kido-purple);
+            box-shadow: 0 25px 50px rgba(161, 126, 229, 0.35);
+        }
+
+        .logo-spell-grid { 
+            width: 130px; height: 130px; 
+            border-radius: 50%; 
+            margin-bottom: 25px; border: 1px solid rgba(161, 126, 229, 0.4); 
+            padding: 10px; filter: drop-shadow(0 0 10px var(--kido-glow)); 
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
+            object-fit: contain;
+            background: rgba(13, 8, 27, 0.6);
+        }
+
+        .clickable-card:hover .logo-spell-grid { 
+            filter: drop-shadow(0 0 25px var(--kido-purple));
+            transform: scale(1.06) rotate(3deg);
+            border-color: var(--kido-purple);
+        }
+
+        .clickable-card h3 { font-family: 'Cinzel'; font-size: 1.5rem; color: #fff; letter-spacing: 2px; margin-bottom: 15px; transition: text-shadow 0.4s ease; }
+        .clickable-card:hover h3 { 
+            text-shadow: 0 0 15px var(--kido-purple);
+        }
+        
+        .clickable-card p { font-family: 'Cormorant Garamond'; font-size: 1.2rem; color: #ccc; font-style: italic; line-height: 1.4; margin: 0; }
+
+        /* FENÊTRES MODALES POUR LE CONTENU LONG */
+        .details-section { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(9, 5, 19, 0.98); z-index: 3000; 
+            display: flex; align-items: flex-start; justify-content: center; 
+            opacity: 0; visibility: hidden;
+            backdrop-filter: blur(25px);
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s;
+            overflow-y: auto; 
+            padding: 60px 0;
+        }
+        
+        .details-section:target { opacity: 1; visibility: visible; }
+
+        .content-box { 
+            max-width: 950px; width: 92%; background: #120b24; 
+            padding: 60px 50px; border: 1px solid var(--kido-purple); 
+            position: relative; text-align: center;
+            box-shadow: 0 0 100px rgba(161, 126, 229, 0.3);
+            transform: translateY(30px) scale(0.98);
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 3001;
+            margin: auto 0;
+            will-change: transform;
+        }
+        
+        .details-section:target .content-box { transform: translateY(0) scale(1); }
+
+        .corner-logo {
+            position: absolute; width: 45px; opacity: 0.5;
+            filter: drop-shadow(0 0 5px var(--kido-purple));
+        }
+        .corner-logo.top-left { top: 25px; left: 25px; }
+        .corner-logo.top-right { top: 25px; right: 25px; }
+
+        .btn-close { 
+            display: inline-block; padding: 15px 55px; margin-top: 40px; 
+            border: 1px solid var(--kido-purple); color: var(--kido-purple); 
+            text-decoration: none; font-family: 'Cinzel'; letter-spacing: 5px; 
+            transition: all 0.4s ease; font-weight: 700; border-radius: 2px; 
+        }
+        .btn-close:hover { background: var(--kido-purple); color: #fff; box-shadow: 0 0 40px var(--kido-purple); transform: scale(1.03); }
+
+        /* TYPOGRAPHIE ET STRUCTURE DU TEXTE */
+        .story-text {
+            font-family: 'Cormorant Garamond'; color: #dddddd;
+            font-size: 1.4rem; line-height: 1.8; text-align: justify;
+            margin: 30px 0 10px 0;
+        }
+        
+        .sub-block {
+            background: rgba(19, 11, 36, 0.6);
+            border-left: 3px solid var(--kido-purple);
+            padding: 20px 25px;
+            margin: 25px 0;
+            border-radius: 0 4px 4px 0;
+            text-align: left;
+        }
+
+        .sub-block.separator {
+            border-left: none;
+            border-top: 1px dashed rgba(161, 126, 229, 0.4);
+            padding: 25px 0 0 0;
+            margin-top: 35px;
+            border-radius: 0;
+        }
+
+        .sub-block h5 {
+            font-family: 'Cinzel';
+            color: var(--kido-purple);
+            font-size: 1.2rem;
+            margin: 0 0 15px 0;
+            letter-spacing: 2px;
+        }
+
+        .sub-block ul, .sub-block ol {
+            margin: 0; padding-left: 20px;
+            color: #d1cbdc;
+        }
+
+        .sub-block li {
+            margin-bottom: 8px;
+        }
+        
+        .highlight-purple { color: var(--kido-purple); font-weight: bold; font-family: 'Cinzel'; text-shadow: 0 0 10px rgba(161, 126, 229, 0.4); }
+        .highlight-link { color: var(--kido-light); text-decoration: none; border-bottom: 1px dashed var(--kido-light); transition: 0.3s; cursor: pointer; }
+        .highlight-link:hover { color: #fff; border-bottom-color: #fff; text-shadow: 0 0 8px #fff; }
+
+        /* Grille d'informations (Case 1) */
+        .info-header-grid {
+            max-width: 850px;
+            margin: 0 auto 35px auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px 30px;
+            background: rgba(13, 8, 27, 0.4);
+            padding: 30px;
+            border-radius: 4px;
+            border: 1px solid rgba(161, 126, 229, 0.2);
+            border-left: 4px solid var(--kido-purple);
+            text-align: left;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1rem;
+        }
+        .info-item { color: #ccc; }
+        .info-item strong { color: var(--kido-purple); font-family: 'Cinzel'; letter-spacing: 1px; font-weight: 700; }
+
+        /* Bouton Spécial Feuilles de calcul */
+        .btn-sheets {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(86, 61, 156, 0.3);
+            border: 1px solid var(--kido-purple);
+            padding: 14px 30px;
+            color: #fff;
+            font-family: 'Cinzel';
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            margin-top: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            will-change: transform, box-shadow;
+        }
+        .btn-sheets:hover {
+            background: var(--kido-purple);
+            box-shadow: 0 0 25px var(--kido-glow);
+            transform: translateY(-3px);
+        }
+
+        .audio-player { 
+            position: fixed; bottom: 40px; left: 40px; z-index: 2000; 
+            background: rgba(13,8,27,0.9); border: 1px solid rgba(161,126,229,0.4); 
+            padding: 15px 25px; border-radius: 100px; display: flex; 
+            align-items: center; backdrop-filter: blur(15px); transition: 0.4s; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+        #volume-slider { width: 60px; accent-color: var(--kido-purple); margin-left: 15px; cursor: pointer; }
+
+        @media (max-width: 950px) {
+            .lore-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 850px) {
+            .info-header-grid { grid-template-columns: repeat(2, 1fr); }
+            .content-box { padding: 50px 30px; }
+        }
+        @media (max-width: 600px) {
+            .lore-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 550px) {
+            .info-header-grid { grid-template-columns: 1fr; gap: 15px; }
+            .content-box { padding: 40px 20px; }
+            .mist-title { font-size: 2.5rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="background-container"></div>
+    <div class="vignette"></div>
+    <canvas id="butterfly-canvas"></canvas>
+
+    <audio id="bg-audio" loop>
+        <source src="https://mp3tourl.com/audio/1779033978200-8e4d80c6-2ebc-42a9-9ccf-bae0c04b1c39.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="audio-player">
+        <div id="music-toggle" style="cursor:pointer; color:var(--kido-purple); width: 20px;"><i class="fas fa-play" id="play-icon"></i></div>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.3">
+    </div>
+
+    <header id="main-header">
+        <img src="https://imgur.com/vaorPVs.png" alt="Kido Logo" class="logo-top">
+        <nav>
+            <ul>
+                <li><a href="#home">MANUSCRIT</a></li>
+                <li><a href="#lore">HISTOIRE</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section id="home" class="hero">
+        <h1 class="mist-title" data-aos="zoom-out" data-aos-duration="2500">Souffle de l'Insecte</h1>
+    </section>
+
+    <section id="lore" class="main-section">
+        <div class="lore-grid">
+            <a href="#details-informations" class="clickable-card" data-aos="fade-up">
+                <img src="https://imgur.com/bQEG8DE.png" class="logo-spell-grid" alt="Icône Informations" loading="lazy">
+                <h3>Informations</h3>
+                <p>Les secrets du Souffle de l'Insecte, ses piliers, ses valeurs et ses styles de combat.</p>
+            </a>
+
+            <a href="#details-formation" class="clickable-card" data-aos="fade-up" data-aos-delay="100">
+                <img src="https://imgur.com/nWeMmi7.png" class="logo-spell-grid" alt="Icône Formation" loading="lazy">
+                <h3>Formation au Souffle</h3>
+                <p>Les épreuves réglementaires, tests physiques, de personnalité et d'aptitude médicale.</p>
+            </a>
+
+            <a href="#details-bibliotheque" class="clickable-card" data-aos="fade-up" data-aos-delay="200">
+                <img src="https://imgur.com/y69cAT1.png" class="logo-spell-grid" alt="Icône Bibliothèque" loading="lazy">
+                <h3>Bibliothèque</h3>
+                <p>Mouvements du souffle, stocks des récoltes du domaine et protocoles d'entraînements.</p>
+            </a>
+
+            <a href="#details-code" class="clickable-card" data-aos="fade-up" data-aos-delay="300">
+                <img src="https://imgur.com/rmHtaXo.png" class="logo-spell-grid" alt="Icône Code" loading="lazy">
+                <h3>Code de l'Insecte</h3>
+                <p>Philosophie fondamentale, serment de l'Ordre et titres honorifiques décernés.</p>
+            </a>
+
+            <a href="#details-memorial" class="clickable-card" data-aos="fade-up" data-aos-delay="400">
+                <img src="https://imgur.com/1Ybuy6o.png" class="logo-spell-grid" alt="Icône Mémorial" loading="lazy">
+                <h3>Mémorial</h3>
+                <p>Hommage éternel aux érudits et vaillants pourfendeurs tombés au combat.</p>
+            </a>
+        </div>
+    </section>
+
+    <section id="details-informations" class="details-section">
+        <div class="content-box">
+            <img src="https://imgur.com/vaorPVs.png" class="corner-logo top-left" alt="Décoration" loading="lazy">
+            <img src="https://imgur.com/vaorPVs.png" class="corner-logo top-right" alt="Décoration" loading="lazy">
+            
+            <h2 style="font-family:'Shojumaru'; font-size:2.8rem; color:var(--kido-purple); margin: 0 0 10px 0;">Informations</h2>
+            <h4 style="font-family:'Cinzel'; color:#aaa; letter-spacing:3px; margin: 0 0 30px 0;">SOUFFLE DE L'INSECTE</h4>
+            
+            <div class="info-header-grid">
+                <div class="info-item"><strong>Créatrice :</strong> Kamikiri Nomichi</div>
+                <div class="info-item"><strong>Pilier Actuel :</strong> Noboru Tōyama</div>
+                <div class="info-item"><strong>Tsuguko :</strong> Val Tōyama</div>
+                <div class="info-item"><strong>Dirigeant :</strong> Noboru Tōyama</div>
+                <div class="info-item"><strong>Valeurs :</strong> ???</div>
+                <div class="info-item"><strong>Devise :</strong> "Respecter la vie"</div>
+            </div>
+
+            <div class="story-text">
+                <span class="highlight-purple" style="font-size: 1.6rem; display: block; text-align: center; margin-bottom: 15px;">Le Souffle de L'Insecte</span>
+                Les origines du souffle de l'Insecte sont encore vagues comme la majority des autres souffles. Nous ne connaissons pas toute notre histoire. Néanmoins nous avons certaines informations sur ce sujet là. La première qui est nous sommes un dérivé de la fleur qui est-elle aussi un dériver de l'eau.<br><br>
+                L'Insecte fut créer pour palier à un manque de force chez certain pourfendeur. C'est donc pourquoi en globalité les membres de ce souffle combattent avec du poison sur leur lame. Ils n'arrivent guère à trancher la tête au démon sous ce manque de force physique mais ils pourfendent les démons via l'aide de leur poison personnel.<br><br>
+                Puis pour combler ce manque de force physique les membres du souffle de l'Insecte sont bien connu pour leurs agilités mais aussi laissant transparaitre une certaine élégance dans leur style de combat et leurs exécutions de mouvement de souffle. Un bon pourfendeur de l'Insecte peut se montrer intouchable contre les démons. Finalement, ils sont connus en majorité pour être de très bon soigneurs et des érudits/Scientifiques de l'Ordre des Pourfendeurs.
+            </div>
+            
+            <a href="#lore" class="btn-close">FERMER</a>
+        </div>
+    </section>
+
+    <section id="details-formation" class="details-section">
+        <div class="content-box">
+            <img src="https://imgur.com/vaorPVs.png" class="corner-logo top-left" alt="Décoration" loading="lazy">
+            <img src="https://imgur.com/vaorPVs.png" class="corner-logo top-right" alt="Décoration" loading="lazy">
+            
+            <h2 style="font-family:'Shojumaru'; font-size:2.8rem; color:var(--kido-purple); margin: 0 0 10px 0;">Formation au Souffle</h2>
+            <h4 style="font-family:'Cinzel'; color:#aaa; letter-spacing:3px; margin: 0 0 30px 0;">PARCOURS DE L'ASPIRANT</h4>
+
+            <div class="story-text">
+                <span class="highlight-purple" style="font-size: 1.5rem; display: block; margin-bottom: 15px;">1. Test Physique</span>
+                Bien que le souffle de l’Insecte soit reconnu pour ses compétences médicales, ses membres restent avant tout des pourfendeurs. Il est donc <span class="highlight-purple">indispensable</span> qu’ils possèdent un minimum de compétences en combat pour être recrutés.<br><br>
+                Ainsi, le formateur accompagne l’aspirant dans la cour extérieure du domaine afin de tester son endurance et sa maîtrise technique. 
+                L’aspirant doit effectuer <strong>3 tours de terrain en courant</strong>. À chaque passage au point de départ, il devra exécuter une parade parfaite face au formateur. En cas d’échec, il recommence depuis le début jusqu’à ce qu’il réussisse l’ensemble des 3 tours.
+
+                <span class="highlight-purple" style="font-size: 1.5rem; display: block; margin-top: 35px; margin-bottom: 15px;">2. Test de Personnalité</span>
+                Le pourfendeur chargé de former un aspirant au souffle de l’Insecte doit d’abord lui faire passer un test de personnalité. Il est essentiel de s’assurer que seuls des individus possédant les qualités requises, telles que <span class="highlight-purple">l’altruisme</span> et <span class="highlight-purple">l’empathie</span>, puissent intégrer notre souffle. Le formateur doit ainsi évaluer si l’attitude, les manières et le caractère de l’aspirant sont compatibles with ces valeurs.
+
+                <div class="sub-block">
+                    <h5>Questions à poser obligatoirement :</h5>
+                    <ul>
+                        <li>Nom, prénom, âge.</li>
+                        <li>Motivations en tant que pourfendeur.</li>
+                        <li>Motivations pour rejoindre le souffle de l’Insecte.</li>
+                        <li>Objectif à long terme en tant que pourfendeur.</li>
+                        <li><strong>Mise en situation :</strong> 2 pourfendeurs affrontent 1 démon. L’un combat, l’autre est blessé. Qui doit être aidé en priorité ?</li>
+                        <li><strong>Question de réflexion :</strong> Le formateur pose une question libre à l’aspirant sur le monde qui l’entoure afin d’évaluer ses connaissances.</li>
+                    </ul>
+                </div>
+                Une fois cette évaluation terminée, le formateur remet la documentation du souffle de l’Insecte à l’aspirant et lui fait réciter son code. 
+                <span style="color: #ff6b6b;">Si l’aspirant échoue à au moins deux questions ou que ses réponses ne reflètent pas les valeurs du souffle</span>, la formation doit être interrompue et l’aspirant escorté immédiatement hors du domaine.
+
+                <span class="highlight-purple" style="font-size: 1.5rem; display: block; margin-top: 35px; margin-bottom: 15px;">3. Formation aux Soins</span>
+                Le formateur accompagne l’aspirant dans une salle libre et lui remet la documentation sur les plantes médicinales :<br><br>
+                
+                <i class="fas fa-link" style="color:var(--kido-purple); margin-right: 5px;"></i> <a class="highlight-link" href="#" onclick="alert('Lien vers la liste des plantes'); return false;">Liste des plantes médicinales</a><br><br>
+                
+                Il lui explique ensuite les bases des soins, notamment <strong>le protocole d’hygiène</strong> (utilisation du masque et des gants) ainsi que <strong>les étapes pour examiner une blessure</strong>. L’aspirant doit lire les effets de chaque plante (sans se concentrer sur leur préparation). Une fois la lecture d’une plante terminée, le formateur complète les explications en détaillant ses effets et son application.<br><br>
+                Ensuite, l’aspirant est mis en situation avec un cas simple choisi par le formateur (les blessures graves comme les brûlures ou gelures doivent être évitées sans formation préalable). L’aspirant devra valider rigoureusement toutes les étapes du soin :
+                
+                <div class="sub-block" style="border-left-color: var(--kido-purple-medium);">
+                    <ol>
+                        <li>Déterminer la nature des blessures.</li>
+                        <li>Appliquer scrupuleusement le protocole d’hygiène.</li>
+                        <li>Administrer le traitement adapté.</li>
+                    </ol>
+                </div>
+                Le formateur peut apporter des indications en cas d’hésitation. Toutefois, si l’aspirant peine à comprendre malgré l’aide fournie et semble totalement dépassé, la formation est immédiatement interrompue, et il est raccompagné hors du domaine.
+
+                <span class="highlight-purple" style="font-size: 1.5rem; display: block; margin-top: 35px; margin-bottom: 15px;">Validation & Récompenses</span>
+                Si l’aspirant réussit brillamment ces trois épreuves, le formateur is officiellement autorisé à :
+                <div class="sub-block" style="border-left-color: var(--kido-light); background: rgba(30, 16, 54, 0.4);">
+                    <ul>
+                        <li>Lui apposer la <strong>marque de Mizunoto</strong> de l’Insecte sur la main.</li>
+                        <li>Faire une demande officielle pour lui attribuer sa tenue spéciale (<span class="highlight-purple">ticket F6</span>).</li>
+                        <li>Lui expliquer la procédure pour obtenir ses accréditations réglementaires auprès des corbeaux de l’Ordre (<span class="highlight-purple">rôles Discord</span>).</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <a href="#lore" class="btn-close">FERMER</a>
+        </div>
+    </section>
+
+    <section id="details-bibliotheque" class="details-section">
+        <div class="content-box">
+            <img src="https://imgur.com/vaorPVs.png" class="corner-logo top-left" alt="Décoration" loading="lazy">
+            <img src="https://imgur.com/vaorPVs.png" class="corner-logo top-right" alt="Décoration" loading="lazy">
+            
+            <h2 style="font-family:'Shojumaru'; font-size:2.8rem; color:var(--kido-purple); margin: 0 0 10px 0;">Bibliothèque</h2>
+            <h4 style="font-family:'Cinzel'; color:#aaa; letter-spacing:3px; margin: 0 0 30px 0;">SAVOIRS ET SOUFFLES</h4>
+
+            <div class="story-text">
+                <span class="highlight-purple" style="font-size: 1.6rem; display: block; border-bottom: 1px solid var(--kido-purple); padding-bottom: 5px; margin-bottom: 20px;">Mouvements du Souffle</span>
+                
+                <div class="sub-block">
+                    <h5>Premier Mouvement — Danse des Papillons : Papillonnage</h5>
+                    <p style="font-style: italic; color:#b0a8c0; margin: 0 0 8px 0;">(Chô no Mai: Tawamure)</p>
+                    Le pourfendeur viendra effectuer certains mouvements frénétique avec sa lame venant disperser du poison sur les articulations de son adversaire pour l'affaiblir.
+                </div>
+
+                <div class="sub-block" style="border-left-color: var(--kido-purple-dark);">
+                    <h5>Deuxième Mouvement — Danse de la Libellule : Œil à Facettes Hexagonales</h5>
+                    <p style="font-style: italic; color:#b0a8c0; margin: 0 0 8px 0;">(Seirei no Mai: Fukugan Rokkaku)</p>
+                    Ce mouvement de l'Insecte a un but défensif. C'est un saut qui est accompagné d'une ruée vers l'endroit ou le pourfendeur regarde. C'est un bon mouvement pour sortir d'une situation critique.
+                </div>
+
+                <div class="sub-block" style="border-left-color: var(--kido-purple-medium);">
+                    <h5>Troisième Mouvement — Danse de la Coccinelle: Soin de la Nuit</h5>
+                    <p style="font-style: italic; color:#b0a8c0; margin: 0 0 8px 0;">(Tentōchū no Mai: Naito kea)</p>
+                    Le pourfendeur utilise alors des soins tactique durant un combat sur un blessé pour pouvoir le soigner et le renforcer.
+                </div>
+
+                <div class="sub-block" style="border-left-color: var(--kido-light);">
+                    <h5>Quatrième Mouvement — Danse des Lucioles: Ver agglutinant</h5>
+                    <p style="font-style: italic; color:#b0a8c0; margin: 0 0 8px 0;">(Hotaru no Mai: Gunsei wāmu)</p>
+                    Le pourfendeur utilise alors des soins tactique durant un combat sur plusieurs blessés pour pouvoir les soigner et les renforcer.
+                </div>
+
+                <div class="sub-block">
+                    <h5>Cinquième Mouvement — Danse de la Cigale: Battement du Papillon</h5>
+                    <p style="font-style: italic; color:#b0a8c0; margin: 0 0 8px 0;">(Semi no Mai: Batafuraibīto)</p>
+                    Le pourfendeur déverse autour de lui du poison créant ainsi une flaque de poison. Ainsi, si des démons se trouvent autour de lui ils viendront être toucher par celui-ci.
+                </div>
+
+                <div class="sub-block" style="border-left-color: var(--kido-purple-dark);">
+                    <h5>Sixième Mouvement — Danse de la Piqûre d'Abeille : Battement Véritable</h5>
+                    <p style="font-style: italic; color:#b0a8c0; margin: 0 0 8px 0;">(Hôga no Mai: Manabiki)</p>
+                    C'est une attaque de corps à corps qui viendra cibler précisément d'un coup net de katana un point vitaux de la cible laissant déverser son poison dans le corps de celui-ci.
+                </div>
+
+                <div class="sub-block" style="border-left-color: var(--kido-light); background: rgba(60, 20, 80, 0.2);">
+                    <h5>Mouvement Ultime 1 — Danse de l'Issoria : Battement du Papillon</h5>
+                    <p style="font-style: italic; color:var(--kido-light); margin: 0 0 8px 0;">(Issori no Mai: Batafuraibīto)</p>
+                    C'est le mouvement ultime que tout Hinoto/oe usent. Ce mouvement là viendra propulser chaque personne autour de l'utilisateur du mouvement les laissant percevoir une vision trouble étant perturber par le relâchement de son aura.
+                </div>
+
+                <div class="sub-block" style="border-left-color: var(--kido-purple); background: rgba(60, 20, 80, 0.2);">
+                    <h5>Mouvement Ultime 2 — Danse du Lycène bleu: Centipède Guérisseur</h5>
+                    <p style="font-style: italic; color:var(--kido-light); margin: 0 0 8px 0;">(Burūrisen no Mai: Mukadehīrā)</p>
+                    L'utilisateur vient alors soignés chaque personnes autours de lui venant relâcher des spores médicinales tout en infligeant de lourds dégâts au démon se trouvant autour.
+                </div>
+
+                <span class="highlight-purple" style="font-size: 1.6rem; display: block; border-bottom: 1px solid var(--kido-purple); padding-bottom: 5px; margin-top: 50px; margin-bottom: 20px;">Les Récoltes</span>
+                <strong>Les Récoltes des plantes médicinales/toxiques</strong><br>
+                Voici donc le stock des plantes du domaine de l'insecte. Ce tableau recense aussi la position de chaque plante dans chaque zone et la zone de récolte sur la carte :<br><br>
+                
+                <a href="https://docs.google.com/spreadsheets/d/1T9V_dYNWoDJqHEbAVpsqM7hIVz0ryVMUBeWBVenIW5s/edit?gid=0#gid=0" target="_blank" class="btn-sheets">
+                    <i class="fas fa-table"></i> CONSULTER LE STOCK DES RÉCOLTES
+                </a>
+
+                <span class="highlight-purple" style="font-size: 1.6rem; display: block; border-bottom: 1px solid var(--kido-purple); padding-bottom: 5px; margin-top: 50px; margin-bottom: 20px;">L'Entraînement Récupérateur</span>
+                Le but de l'entrainement récupérateur est d'une d'assister un pourfendeur ayant eu de lourde séquelle après un combat/mission. En premier lieu il va falloir veiller à soigner et surveiller l'état de votre patient. Dès que celui-ci peut tenir debout et marcher, il va devoir subir plusieurs épreuves pour qu'ils regagnent sa puissance et toutes ses aptitudes physiques.<br><br>
+                
+                <div class="sub-block" style="border-left-color: var(--kido-light);">
+                    <h5>La liste des entraînements à effectuer dans l'ordre :</h5>
+                    <ol>
+                        <li><strong>Premier Entraînement :</strong> Vous devrez faire des étirements musculaires à la personne ou bien un massage pour réveiller ses muscles et articulations.</li>
+                        <li><strong>Deuxième Entraînement :</strong> Le patient va devoir se mettre dans un état de méditation. Ainsi durant celle-ci il va devoir résister ou bien éviter les coups de shinai qui lui seront mit.</li>
+                        <li><strong>Troisième Entraînement :</strong> Pour cette pratique vous allez faire appel aux réflexes de votre patient. Le but est qu'il y aura plusieurs tasses de thé qui seront placées sur une table. Au moment du top départ, le premier(e) qui renversera le thé sur la personne remportera le jeu. Si le patient ne réussit pas, continuez tant qu'il n'aura pas réussi.</li>
+                        <li><strong>Quatrième Entraînement :</strong> La quatrième étape va faire travailler la force de votre patient. Il va devoir porter un certain nombre de poids, ceci diffère vis-à-vis de son grade mais aussi de son souffle. Il va devoir effectuer un certain parcours ou bien une course tout en gardant ses poids. Néanmoins, il a interdiction de se stopper.</li>
+                        <li><strong>Cinquième Entraînement :</strong> Le patient va devoir travailler son souffle et donc forcement s'entraîner sur les gourdes de l'Insecte. Néanmoins, les gourdes adaptées dépendent aussi du grade du pourfendeur. Il aura réussi après avoir fait exploser 2 gourdes.</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <a href="#lore" class="btn-close">FERMER</a>
+        </div>
+    </section>
+
+    <section id="details-code" class="details-section">
+        <div class="content-box">
+            <img src="https://imgur.com/vaorPVs.png" class="corner-logo top-left" alt="Décoration" loading="lazy">
+            <img src="https://imgur.com/vaorPVs.png" class="corner-logo top-right" alt="Décoration" loading="lazy">
+            
+            <h2 style="font-family:'Shojumaru'; font-size:2.8rem; color:var(--kido-purple); margin: 0 0 10px 0;">Code de l'Insecte</h2>
+            <h4 style="font-family:'Cinzel'; color:#aaa; letter-spacing:3px; margin: 0 0 30px 0;">PHILOSOPHIE & DISTINCTIONS</h4>
+
+            <div class="story-text">
+                <span class="highlight-purple" style="font-size: 1.5rem; display: block; text-align: center; margin-bottom: 20px;">Le Code de l'Insecte</span>
+                
+                <p style="text-align: center; font-style: italic; font-size: 1.5rem; line-height: 2.2; color: #e1dbe9; letter-spacing: 1px;">
+                    « D’une promesse éternelle j’aiderai l’Humanité,<br>
+                    J’empêcherai les ténèbres d’entailler la lumière de la vie,<br>
+                    De par mes connaissances je sauverai le bien et empoisonnerai le mal.<br>
+                    A l’aide de mon agilité tel un papillon,<br>
+                    Je trancherai les démons,<br>
+                    Ainsi la paix sera préservée. »
+                </p>
+                <br>
+                C'est alors qu'en devenant Kanoto/oe vous allez devoir comprendre et interpréter de votre façon la philosophie de l'Insecte. C'est une partie importante de se rapprocher d'une certaine réflexion pour vous développer et évoluer au sein de notre sublime souffle qui est l'Insecte.
+
+                <span class="highlight-purple" style="font-size: 1.5rem; display: block; margin-top: 45px; border-bottom: 1px solid var(--kido-purple); padding-bottom: 5px; margin-bottom: 20px;">Titres Honorifiques</span>
+                <strong>Les Titres Honorifiques du souffle de l'Insecte</strong><br>
+                Les Titres Honorifiques du souffles seront exclusivement réservés aux membres de l'Insecte. Ce sont des titres qui seront décernés aux pourfendeurs les plus méritants et les plus investis dans l'enceinte du souffle. Ainsi d'année en année il y aura ou non une distribution des titres qui sera effectuée par les HG du souffle après concertation. Néanmoins, le titre ne peut revenir à plusieurs personnes. Un titre détient un unique détenteur.
+                
+                <div class="sub-block" style="border-left-color: var(--kido-purple);">
+                    <h5>I — Maître Guérisseur <span style="font-size:0.9rem; color:#aaa; font-family:'Noto Sans JP';">(Kanoto à Tsuchinoe)</span></h5>
+                    Comme il est cité dans le titre, ce dernier serait destiné à la personne qui a su se démarquer, se montrer le plus efficace au niveau des soins, que ce soit au sein du Domaine, lors des différentes missions, mais aussi en patrouilles. La personne ne sera pas choisie pour la quantité, mais pour la qualité.
+                </div>
+
+                <div class="sub-block" style="border-left-color: var(--kido-purple-medium);">
+                    <h5>II — Maître Du Poison <span style="font-size:0.9rem; color:#aaa; font-family:'Noto Sans JP';">(Kanoto à Tsuchinoe)</span></h5>
+                    Ce titre sera destiné à la personne ayant créé le poison le plus efficace contre les démons (après avoir vu les effets de ce dernier, ainsi que le fonctionnement.)
+                </div>
+
+                <div class="sub-block" style="border-left-color: var(--kido-light);">
+                    <h5>III — Maître de la Science <span style="font-size:0.9rem; color:#aaa; font-family:'Noto Sans JP';">(Kanoto à Tsuchinoe)</span></h5>
+                    Ce titre sera destiné aux membres du souffle de l’Insecte ayant réalisé la meilleure invention qu’elle soit scientifique, ou technologique pouvant servir au souffle, ou directement à l’Ordre des pourfendeurs.
+                </div>
+            </div>
+            
+            <a href="#lore" class="btn-close">FERMER</a>
+        </div>
+    </section>
+
+    <section id="details-memorial" class="details-section">
+        <div class="content-box">
+            <img src="https://imgur.com/vaorPVs.png" class="corner-logo top-left" alt="Décoration" loading="lazy">
+            <img src="https://imgur.com/vaorPVs.png" class="corner-logo top-right" alt="Décoration" loading="lazy">
+            
+            <h2 style="font-family:'Shojumaru'; font-size:2.8rem; color:var(--kido-purple); margin: 0 0 10px 0;">Mémorial</h2>
+            <h4 style="font-family:'Cinzel'; color:#aaa; letter-spacing:3px; margin: 0 0 30px 0;">AUX ÂMES DU DOMAINE</h4>
+
+            <div class="story-text">
+                <div class="sub-block" style="border-left-color: var(--kido-purple); margin-bottom: 40px;">
+                    <h3 style="font-family:'Cinzel'; color:#fff; margin:0 0 5px 0; font-size: 1.6rem;">Okita Akimatsu</h3>
+                    <p style="font-style: italic; color: var(--kido-light); margin: 0 0 15px 0; font-size:1.1rem;">Mort en 37 AP.HS</p>
+                    Dans ce bas monde, vivait un Kinoto. Le kinoto de l’insecte Okita Akimatsu. Dans sa vie de pourfendeur, il a accompli diverses choses, certaines plus grandes que les autres. Ce pourfendeur a accompli des recherches intenses, la preuve étant qu’il passait plus de temps dans ses recherches que dans le reste des choses. Ce pourfendeur était plutôt agréable et doux, mais lorsque quelque chose le dérangeait, il avait tendance à laisser apparaître sur son visage un sourire narquois, et à devenir un pourfendeur un peu plus cruel lorsqu’il retirait ses lunettes. Il a été du genre rapide dans ses affaires, il a vite grimpé les échelons, est vite devenu un hinoto. Et suite à ça, il a continué encore et encore de prouver sa valeur jusqu’à l’obtention du grade de Kinoto de l’insecte parmi l’ordre des pourfendeurs. Mais plus encore, il a pu par le même moment rejoindre le clan Akimatsu et devenir le tsuguko de notre pilier ; Dame Kiyoko Akimatsu.<br><br>
+                    Pour ses diverses prouesses, il avait des dons divers, un individu qui excellait dans l’art des poisons, dans l’art de la torture, et de plus, dans sa médecine. Il a à diverses reprises sauvé des personnes entre la vie et la mort dans l’infirmerie. Il est venu à bout avec d’autres pourfendeurs d’une lune inférieure 6, Méphistos. Cette lune ne causera plus de soucis. Mais hélas, Okita a rendu l’âme peu après, à cause d’un poison mal préparé qui a causé sa perte définitive.<br><br>
+                    Okita faisait primer la bienveillance, et chaque personne pouvait avoir du réconfort auprès de lui, il n’a pas aidé une, mais plusieurs personnes dans l’ordre, tout grade confondu. Il a servi chaque personne et sauvé une grande quantité de pourfendeurs. Il pouvait prêter sa main à son prochain pour l’aider à s’élever. Voilà quel genre d’homme était Monsieur Okita.<br><br>
+                    <span style="font-style: italic; color: #bbb;">Paix à votre âme, mon kinoto. Vos connaissances et vos espoirs ne seront pas vains, nous réussirons à gagner, votre mémoire ne sera pas oubliée.</span>
+                </div>
+
+                <div class="sub-block" style="border-left-color: var(--kido-purple-medium); margin-bottom: 40px;">
+                    <h3 style="font-family:'Cinzel'; color:#fff; margin:0 0 5px 0; font-size: 1.6rem;">Amaya Tanaka</h3>
+                    <p style="font-style: italic; color: var(--kido-light); margin: 0 0 15px 0; font-size:1.1rem;">Morte en 31 AP.HS</p>
+                    Dans le monde des Pourfendeurs, il y avait une Kinoe qui se distinguait par sa rapidité hors norme et son dynamisme débordant. Elle était une femme d'une grande valeur et d'une érudition profonde, aimant partager son savoir avec générosité. Mais ce qui la rendait vraiment unique, c'était son caractère énergique, une force de la nature qui inspirait et motivait ses compagnons. Armée de sa détermination, elle deviendra pilier de l'Insecte et de sa vivacité, elle s'était engagée dans des batailles périlleuses aux côtés du Pilier de la Brume et de la Flamme. Ensemble, ils avaient bravé les dangers pour terrasser deux redoutables Lunes supérieures, la 5 et la 3. Leurs exploits étaient devenus légendaires, marquant une nouvelle ère dans la lutte contre les forces des ténèbres.<br><br>
+                    Au-delà de ses prouesses martiales, ce Pilier portait en elle l'espoir de toute une génération. Elle était un phare de lumière dans les moments les plus sombres, guidant les jeunes Pourfendeurs sur le chemin de la bravoure et de la détermination. Son héritage était celui de la confiance en soi, de la solidarité et de la foi en un avenir meilleur.<br><br>
+                    Pourtant, même si son temps parmi nous fut éphémère, son impact perdurera à travers les âges. Elle restera à jamais une source d'inspiration pour tous ceux qui aspirent à la grandeur et à la noblesse d'âme. Que son nom résonne dans l'esprit et de l'histoire des Pourfendeurs, comme un symbole de courage et d'espoir indomptable. <span style="font-style: italic; color: #bbb;">Repose en paix mon Pilier et mentor Amaya Tanaka, que le savoir perdure éternellement.</span>
+                </div>
+
+                <div class="sub-block" style="border-left-color: var(--kido-purple-dark); margin-bottom: 40px;">
+                    <h3 style="font-family:'Cinzel'; color:#fff; margin:0 0 5px 0; font-size: 1.6rem;">Yorokobi</h3>
+                    <p style="font-style: italic; color: var(--kido-light); margin: 0 0 15px 0; font-size:1.1rem;">Hinoto retraité de l'insecte</p>
+                    Yorokobi commencera son périple au sein de l'ordre des pourfendeurs à l'âge de 10 ans, suivant les traces de son père qui fut dans le souffle du vent. Il commencera a bien maîtriser la lame et a seulement 12 ans il devint tsuchinoe de celui-ci. Il fut envoyé en mission dans le nord du japon, plus précisément à Hokkaido dans le but de renforcer les défenses nord face aux démons. Il put retourner au QG seulement 2 ans plus tard, faisant son retour à l'âge de 14 ans. Le souffle avait perdu depuis un moment son gérant Nail Hyoma et Shin Nozen avait repris le souffle. Il ne se plaisait plus dans celui-ci, ces deux années l'ont fait méditer et rapprocher de sa mère anciennement tsuchinoe du souffle de l'insecte.<br><br>
+                    Il choisit donc de renoncer à la voie de l'entraînement perpétuel et suivit celle de sauver les siens. Il fut rétrogradé kanoto pour pouvoir rejoindre le souffle de l'insecte. Dans ses débuts, il fit la rencontre d'Okita Amar, un compagnon qui deviendra au fil du temps un frère. Okita et Yorokobi étaient comme le Yin et le Yang, Okita spécialisé dans la fabrication de poison et Yorokobi dans celle des remèdes et de la recherche. Âgé de 17 ans il se fit promouvoir au rang de Hinoto et continuera avec son frère de perpétuer le souhait de Kiyoko.<br><br>
+                    Malheureusement le pourfendeur prit sa retraite a 19 ans pour rester proche de sa mère malade. Yorokobi est vu de temps en temps dans la base nord afin d'apprendre les soins aux aspirants du souffle.
+                </div>
+
+                <div class="sub-block" style="border-left-color: var(--kido-light);">
+                    <h3 style="font-family:'Cinzel'; color:#fff; margin:0 0 5px 0; font-size: 1.6rem;">Kiyoko Raijinshi Akimatsu</h3>
+                    <p style="font-style: italic; color: var(--kido-light); margin: 0 0 15px 0; font-size:1.1rem;">Ancien Pilier de l'Insecte</p>
+                    Pourfendeuse d’exception, Kiyoko Raijinshi Akimatsu a traversé d’innombrables épreuves, marquant à jamais l’histoire de l’Ordre. Pilier de l’Insecte, elle demeure dans les mémoires comme une figure emblématique, une guerrière dont l’engagement a transcendé les générations.<br><br>
+                    Son arrivée au sein de l’Ordre remonte à de nombreuses années, lorsqu’elle rejoignit le Souffle de l’Insecte en compagnie de son frère. Sans titre particulier à ses débuts, elle s’est rapidement distinguée par son talent et sa détermination, gravissant un à un les échelons jusqu’à atteindre le titre prestigieux de Pilier de l’Insecte. Son ascension fut marquée par une rigueur exemplaire et un dévouement sans faille envers la cause qu’elle servait.<br><br>
+                    Au fil des ans, Kiyoko a assumé de nombreuses responsabilités. Elle a assuré la Gérance et la Direction de l’Insecte, mais son influence s’est également étendue au Souffle de l’Eau ainsi qu’au Corps de la Recherche et de la Santé. Son engagement inébranlable et son sens du devoir ont été salués par tous, faisant d’elle une figure centrale de l’Ordre.<br><br>
+                    Mariée à l’ancien Pilier de la Foudre, Mori Raijinshi, elle a donné naissance à trois enfants : Hisoka, Kazuya et Gin. Héritiers de son esprit combatif et de sa passion ardente, ils ont fait honneur à leur lignée par leur fougue et leur détermination sans limites.<br><br>
+                    Kiyoko Raijinshi Akimatsu était bien plus qu’une combattante : elle était un phare pour ses compagnons, une source d’inspiration et de réconfort. Sa générosité et son éclat naturel apaisaient les cœurs, et sa seule présence suffisait à insuffler courage et sérénité à ceux qui la côtoyaient. Elle a marqué non seulement l’Ordre, mais aussi les différentes générations de Maîtres qui ont eu l'occasion de la connaître.
+                    Sa fidélité à l’humanité était absolue, et son souvenir demeurera éternel, tel un héritage impérissable pour ceux qui poursuivent son combat.<br><br>
+                    Kiyoko ne se contentait pas d’être une combattante, elle était également une enseignante. Elle prit en élève de nombreux membres de l'Insecte, dont Okita, Misa et Tenshi.<br><br>
+                    Aujourd’hui encore, son nom est prononcé avec respect et admiration. Les archives de l’Ordre conservent précieusement les récits de ses exploits. Car tant que son souvenir vivra dans les esprits, Kiyoko Raijinshi Akimatsu ne disparaîtra jamais vraiment.
+                </div>
+            </div>
+            
+            <a href="#lore" class="btn-close">FERMER</a>
+        </div>
+    </section>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 1200, once: true, easing: 'ease-out-quint' });
+        
+        // Optimisation du défilement du Header (Cache DOM & Throttle)
+        const header = document.getElementById('main-header');
+        let isScrolled = false;
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 80) {
+                if (!isScrolled) { header.classList.add('scrolled'); isScrolled = true; }
+            } else {
+                if (isScrolled) { header.classList.remove('scrolled'); isScrolled = false; }
+            }
+        }, { passive: true });
+
+        window.addEventListener('hashchange', () => {
+            if (window.location.hash && window.location.hash.startsWith('#details-')) {
+                document.body.classList.add('modal-open');
+            } else {
+                document.body.classList.remove('modal-open');
+            }
+        });
+        
+        if (window.location.hash && window.location.hash.startsWith('#details-')) {
+            document.body.classList.add('modal-open');
+        }
+
+        const audio = document.getElementById('bg-audio');
+        const toggleBtn = document.getElementById('music-toggle');
+        const playIcon = document.getElementById('play-icon');
+        const volumeSlider = document.getElementById('volume-slider');
+
+        toggleBtn.addEventListener('click', () => {
+            if (audio.paused) { 
+                audio.play().catch(e => console.log("Interaction requise")); 
+                playIcon.className = 'fas fa-pause'; 
+            } else { 
+                audio.pause(); 
+                playIcon.className = 'fas fa-play'; 
+            }
+        });
+        volumeSlider.addEventListener('input', (e) => { audio.volume = e.target.value; });
+
+
+        // --- CANVAS - PAPILLONS OPTIMISÉS VIA GPU/ACCÉLÉRATION ---
+        const canvas = document.getElementById('butterfly-canvas');
+        const ctx = canvas.getContext('2d');
+        let w, h, butterflies = [];
+
+        function init() {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+            // On limite le nombre à 45 pour un rendu extrêmement fluide sans baisse de framerate
+            butterflies = Array.from({ length: 45 }, () => createButterfly(true));
+        }
+
+        function createButterfly(randomY = false) {
+            const size = Math.random() * 12 + 4; 
+            return {
+                x: Math.random() * w,
+                y: randomY ? Math.random() * h : h + 50, 
+                size: size,
+                speedY: (Math.random() * 0.8 + 0.4) * (size > 10 ? 1.1 : 0.8), 
+                speedX: Math.random() * 1.2 - 0.6,
+                angle: Math.random() * 0.4 - 0.2, 
+                spin: (Math.random() * 0.03 - 0.015),
+                wingPhase: Math.random() * Math.PI * 2, 
+                wingSpeed: Math.random() * 0.14 + 0.12, 
+                color: Math.random() > 0.65 ? '#a17ee5' : (Math.random() > 0.35 ? '#8d79ca' : '#563d9c'),
+                alpha: Math.random() * 0.4 + 0.4 
+            };
+        }
+
+        function drawButterfly(ctx, b) {
+            ctx.save();
+            ctx.translate(b.x, b.y);
+            ctx.rotate(b.angle);
+            
+            let wingFold = Math.sin(b.wingPhase);
+            if (wingFold < 0.15) wingFold = 0.15; 
+
+            ctx.fillStyle = b.color;
+            ctx.globalAlpha = b.alpha;
+            
+            // Réduction de l'intensité du flou d'ombre pour soulager le processeur graphique
+            ctx.shadowBlur = b.size > 10 ? 15 : 8;
+            ctx.shadowColor = b.color;
+
+            for (let side of [-1, 1]) {
+                ctx.save();
+                ctx.scale(side * wingFold, 1); 
+
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.bezierCurveTo(b.size * 1.6, -b.size * 1.6, b.size * 2.6, -b.size * 0.8, b.size * 0.6, b.size * 0.3);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.bezierCurveTo(b.size * 1.3, b.size * 0.6, b.size * 1.6, b.size * 1.9, b.size * 0.2, b.size * 0.9);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#06020c';
+            ctx.globalAlpha = b.alpha + 0.15;
+            ctx.beginPath();
+            ctx.ellipse(0, -b.size * 0.1, b.size * 0.11, b.size * 0.7, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, w, h);
+            
+            for (let i = 0; i < butterflies.length; i++) {
+                let b = butterflies[i];
+                drawButterfly(ctx, b);
+                
+                b.y -= b.speedY;
+                b.x += b.speedX + Math.sin(b.y / 50 + b.wingPhase) * 0.3; 
+                b.angle += b.spin;
+                b.wingPhase += b.wingSpeed;
+
+                if (b.y < -50 || b.x < -60 || b.x > w + 60) {
+                    butterflies[i] = createButterfly(false);
+                }
+            }
+            
+            requestAnimationFrame(draw);
+        }
+        
+        // Optimisation du resize de la fenêtre (Debounce léger automatique via l'événement)
+        window.addEventListener('resize', init, { passive: true });
+        init(); draw();
+    </script>
+</body>
+</html>
